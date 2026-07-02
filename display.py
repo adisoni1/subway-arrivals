@@ -185,18 +185,39 @@ def route_color(route):
     return ROUTE_COLORS.get(route.upper(), (120, 120, 120))
 
 
+def _draw_centered_glyph(canvas, font, letter, cx, cy, color):
+    """Draw a single glyph so its *visible ink* is centered on (cx, cy).
+
+    Centering on the font bounding box leaves letters looking high/low because
+    the box reserves space for descenders. We measure the actual lit pixels and
+    place those, so any font/size sits centered in the bullet.
+    """
+    fbbx = font.headers["fbbx"]
+    fbby = font.headers["fbby"]
+    fbbyoff = font.headers["fbbyoff"]
+    y_off = -(fbby + fbbyoff)  # matches RGBMatrixEmulator's DrawText offset
+    bitmap = font.bdf_font.draw(
+        letter, len(letter) * (fbbx + 1), missing=font.default_character
+    ).todata(2)
+    lit = [(x, y) for y, row in enumerate(bitmap) for x, v in enumerate(row) if v == 1]
+    if not lit:
+        return
+    xs = [p[0] for p in lit]
+    ys = [p[1] for p in lit]
+    # A pixel (gx, gy) lands at screen (text_x + gx, baseline + gy + y_off).
+    # Solve so the ink's midpoint maps to (cx, cy).
+    text_x = round(cx - (min(xs) + max(xs)) / 2)
+    baseline = round(cy - y_off - (min(ys) + max(ys)) / 2)
+    graphics.DrawText(canvas, font, text_x, baseline, color, letter)
+
+
 def _draw_subway_bullet(canvas, route, cy, layout):
     """Filled circle + centered route letter. Returns the x where text starts."""
     cx, radius = layout.bullet_cx, layout.bullet_radius
-    bullet_font = layout.bullet_font
     _draw_filled_circle(canvas, cx, cy, radius, route_color(route))
     letter = route.upper()[:1]
     text_rgb = BLACK if route.upper() in BLACK_TEXT_ROUTES else WHITE
-    lw = _text_width(bullet_font, letter)
-    graphics.DrawText(
-        canvas, bullet_font, cx - lw // 2,
-        cy + bullet_font.height // 2 - 1, _color(text_rgb), letter,
-    )
+    _draw_centered_glyph(canvas, layout.bullet_font, letter, cx, cy, _color(text_rgb))
     return cx + radius + 3
 
 
