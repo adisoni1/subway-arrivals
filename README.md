@@ -161,25 +161,40 @@ keeps showing the last good arrivals instead of crashing or blanking.
 hardware as soon as the matrix library is present. But you do need to set up the
 Pi (do this once):
 
-1. **Build hzeller's matrix bindings** (this is what triggers the hardware path):
+1. **Build hzeller's matrix library** (this is what triggers the hardware path).
+   The current library builds via `pyproject.toml` — install it with pip from
+   the repo root (the old `make build-python` targets no longer exist):
 
    ```bash
-   git clone https://github.com/hzeller/rpi-rgb-led-matrix
-   cd rpi-rgb-led-matrix && make build-python PYTHON=$(command -v python3)
-   sudo make install-python PYTHON=$(command -v python3)
+   git clone https://github.com/hzeller/rpi-rgb-led-matrix.git
+   cd rpi-rgb-led-matrix
+   sudo pip3 install --break-system-packages -v .
+   cd ~ && sudo python3 -c "import rgbmatrix; print('OK', rgbmatrix.__file__)"
    ```
+
+   > **Low-RAM Pis (Zero 2 W, 3A+, anything with 512 MB):** the default parallel
+   > build gets OOM-killed (`Killed`, exit 137) compiling the Cython `.pyx`
+   > files. Add swap and build single-threaded first:
+   >
+   > ```bash
+   > sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile
+   > sudo mkswap /swapfile && sudo swapon /swapfile
+   > echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab   # persist
+   > # then, in the clone:
+   > sudo CMAKE_BUILD_PARALLEL_LEVEL=1 pip3 install --break-system-packages -v .
+   > ```
+   >
+   > The compile takes 10–20 min on these boards; `-v` streams progress so you
+   > can see it isn't hung.
 
 2. **Install the Python data deps** into the *same* interpreter you'll run as
    root (the matrix needs root for GPIO, so everything must be importable by
-   root's `python3`):
+   root's `python3`). On Raspberry Pi OS Bookworm/Trixie pip is "externally
+   managed", hence `--break-system-packages`:
 
    ```bash
-   sudo pip3 install nyct-gtfs requests    # RGBMatrixEmulator not needed on the Pi
+   sudo pip3 install --break-system-packages -r requirements-pi.txt
    ```
-
-   (If you prefer a venv, create it with `--system-site-packages` so the
-   system-installed `rgbmatrix` module is visible, and run the venv's python
-   with sudo.)
 
 3. **Copy this project to the Pi and run it** (root for GPIO):
 

@@ -66,6 +66,12 @@ def parse_args():
         choices=["destination", "direction"],
         help="Row text: 'destination' headsign (default) or 'direction' (Uptown/Downtown).",
     )
+    p.add_argument(
+        "--chain-length",
+        type=int,
+        choices=[1, 2],
+        help="Chained 64x32 panels: 2 = full 128x32 (default), 1 = single panel for testing.",
+    )
     return p.parse_args()
 
 
@@ -77,6 +83,7 @@ def main():
     layout_name = args.layout or cfg.get("layout", display.DEFAULT_LAYOUT)
     layout = display.Layout(layout_name)
     labels = args.labels or cfg.get("labels", "destination")
+    chain_length = args.chain_length or cfg.get("chain_length", 2)
     # Fetch at least enough trains to fill the chosen layout's rows.
     max_arrivals = max(cfg.get("max_arrivals", 3), layout.max_rows)
     screens = cfg["screens"]
@@ -87,12 +94,13 @@ def main():
     caches = [[] for _ in screens]
     last_fetch = [0.0 for _ in screens]
 
-    matrix = display.init_matrix()
+    matrix = display.init_matrix(chain_length=chain_length)
     canvas = matrix.CreateFrameCanvas()
 
     print(
         f"Subway sign cycling {len(screens)} screens every {cycle_seconds}s "
-        f"(layout: {layout.name}, labels: {labels})."
+        f"(layout: {layout.name}, labels: {labels}, "
+        f"{display.WIDTH}x{display.ROWS})."
     )
     if not display.IS_HARDWARE:
         print("Emulator running — open http://localhost:8888 in a browser.")

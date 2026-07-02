@@ -31,7 +31,17 @@ FONTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fonts")
 ROWS = 32
 COLS = 64
 CHAIN_LENGTH = 2
-WIDTH = COLS * CHAIN_LENGTH  # 128
+WIDTH = COLS * CHAIN_LENGTH  # 128 (set at runtime by init_matrix / set_chain_length)
+
+
+def set_chain_length(chain_length):
+    """Change how many 64x32 panels are chained (1 for single-panel testing).
+
+    Updates WIDTH so all drawing (right-alignment, truncation, divider) matches.
+    """
+    global CHAIN_LENGTH, WIDTH
+    CHAIN_LENGTH = int(chain_length)
+    WIDTH = COLS * CHAIN_LENGTH
 
 # --- Colors -----------------------------------------------------------------
 WHITE = (255, 255, 255)
@@ -120,8 +130,14 @@ class Layout:
         return len(self.row_tops)
 
 
-def init_matrix():
-    """Create and return an initialized RGBMatrix (hardware or emulator)."""
+def init_matrix(chain_length=None):
+    """Create and return an initialized RGBMatrix (hardware or emulator).
+
+    chain_length: number of chained 64x32 panels. Pass 1 to test on a single
+    panel (64x32). Defaults to the module value (2 -> 128x32).
+    """
+    if chain_length is not None:
+        set_chain_length(chain_length)
     options = RGBMatrixOptions()
     options.rows = ROWS
     options.cols = COLS
