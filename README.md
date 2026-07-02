@@ -252,6 +252,13 @@ If something looks off on the panels:
   `options.led_rgb_sequence = "RBG"` (try permutations until red is red).
 - **Only one panel lights / the two halves are swapped or mirrored** → check the
   `IN`/`OUT` chaining order above; `chain_length` must be `2`.
+- **Half the panel is missing a color (e.g. top half has no red/green, so the
+  amber header disappears)** → the Bonnet isn't fully seated on the Pi's GPIO
+  header. On the **Pi 3A+ the USB connector props the Bonnet up**, so a few pins
+  (R1/G1) don't make contact. Confirm by pressing the Bonnet down during a solid
+  white fill — if the color changes, it's a seating issue. **Fix: add a 2×20
+  stacking header / GPIO extender** so the Bonnet clears the USB port and seats
+  flush. (Tape over the USB shield to prevent shorts in the meantime.)
 
 ## Display geometry
 
