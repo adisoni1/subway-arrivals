@@ -1,0 +1,45 @@
+{
+  "_comment": "The sign cycles through `screens` every cycle_seconds. Subway stop ids: use find_stop.py. direction: N, S, or both.",
+  "layout": "compact",
+  "labels": "destination",
+  "cycle_seconds": 8,
+  "refresh_seconds": 30,
+  "max_arrivals": 3,
+  "screens": [
+    {
+      "type": "subway",
+      "name": "59 ST  4 5 6",
+      "station_stop_id": "629",
+      "direction": "both",
+      "routes": ["4", "5", "6"]
+    },
+    {
+      "type": "subway",
+      "name": "59 ST  N R W",
+      "station_stop_id": "R11",
+      "direction": "both",
+      "routes": ["N", "R", "W"]
+    },
+    {
+      "type": "subway",
+      "name": "53 ST  E F",
+      "station_stop_id": "F11",
+      "direction": "both",
+      "routes": ["E", "F"]
+    },
+    {
+      "type": "subway",
+      "name": "63 ST  M Q",
+      "station_stop_id": "B08",
+      "direction": "both",
+      "routes": ["M", "Q"]
+    },
+    {
+      "_comment": "M15 bus. Needs MTA_BUS_API_KEY env var. Stops: 401704 = 1 Av/E 57 St (NB, M15+SBS); 405387 = 2 Av/E 56 St (SB local); 401765 = 2 Av/E 56 St (SB SBS).",
+      "type": "bus",
+      "name": "M15  1/2 AV  57/56 ST",
+      "stop_codes": ["401704", "405387", "401765"],
+      "routes": null
+    }
+  ]
+}

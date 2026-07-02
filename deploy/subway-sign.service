@@ -1,0 +1,22 @@
+[Unit]
+Description=NYC Subway/Bus Arrivals LED sign
+# Wait for the network so the first data fetch succeeds.
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Adjust WorkingDirectory to wherever you copied the project on the Pi.
+WorkingDirectory=/home/pi/subway-arrivals
+# Root is required for GPIO access to the matrix.
+User=root
+# The MTA bus key (and any other env) lives here, NOT in the repo. Create it
+# with:  echo 'MTA_BUS_API_KEY=your-key' | sudo tee /etc/subway-sign.env
+# The leading "-" makes the file optional (subway-only setups can skip it).
+EnvironmentFile=-/etc/subway-sign.env
+ExecStart=/usr/bin/python3 main.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
