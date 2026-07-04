@@ -108,7 +108,7 @@ def main():
     print(
         f"Subway sign cycling {len(screens)} screens every {cycle_seconds}s "
         f"(layout: {layout.name}, {layout.max_rows} rows, "
-        f"header: {'on' if show_header else 'off'}, labels: {labels}, "
+        f"header: {'on' if layout.show_header else 'off'}, labels: {labels}, "
         f"{display.WIDTH}x{display.ROWS})."
     )
     if not display.IS_HARDWARE:
