@@ -83,10 +83,12 @@ HEADER_BLOCK = 8          # vertical px the header + divider occupy when shown
 RIGHT_MARGIN = 1          # gap between minutes text and right edge
 
 # Selectable layout presets. Switch via config.json "layout" or `--layout`.
-# Row count/positions are computed to fill the height, so hiding the header
+# By default the row count is computed to fill the height, so hiding the header
 # (show_header=False) automatically reclaims its space for an extra/bigger row.
-#   compact: 5x7 text  -> 3 rows with header, 4 without
-#   large:   6x10 text -> 2 rows with header, 3 without
+# A preset may pin its own "rows" and force "header" on/off.
+#   compact: 5x7 text   -> 3 rows with header, 4 without
+#   large:   6x10 text  -> 2 rows with header, 3 without
+#   jumbo:   7x13 text  -> exactly 2 big rows, no header, filling the screen
 LAYOUTS = {
     "compact": {
         "header_font": "5x7.bdf",
@@ -102,6 +104,15 @@ LAYOUTS = {
         "bullet_radius": 4,
         "bullet_cx": 5,
     },
+    "jumbo": {
+        "header_font": "5x7.bdf",
+        "text_font": "7x13.bdf",
+        "bullet_font": "6x10.bdf",
+        "bullet_radius": 5,
+        "bullet_cx": 6,
+        "rows": 2,        # exactly two rows...
+        "header": False,  # ...spanning the whole panel (no header)
+    },
 }
 DEFAULT_LAYOUT = "compact"
 
@@ -109,14 +120,15 @@ DEFAULT_LAYOUT = "compact"
 class Layout:
     """Resolved fonts + geometry for one layout preset."""
 
-    def __init__(self, name=DEFAULT_LAYOUT, show_header=True, rows=None):
+    def __init__(self, name=DEFAULT_LAYOUT, show_header=True):
         if name not in LAYOUTS:
             raise ValueError(
                 f"Unknown layout {name!r}. Choose from {sorted(LAYOUTS)}."
             )
         cfg = LAYOUTS[name]
         self.name = name
-        self.show_header = show_header
+        # A preset may force the header on/off (e.g. jumbo is always full-screen).
+        self.show_header = cfg.get("header", show_header)
         self.header_font = load_font(cfg["header_font"])
         self.text_font = load_font(cfg["text_font"])
         self.bullet_font = load_font(cfg["bullet_font"])
@@ -124,13 +136,12 @@ class Layout:
         self.bullet_cx = cfg["bullet_cx"]
 
         # Space below the header (or the whole panel if the header is hidden).
-        top = HEADER_BLOCK if show_header else 0
+        top = HEADER_BLOCK if self.show_header else 0
         avail = ROWS - top
-        # As many rows as the font allows; `rows` can request fewer (bigger gaps)
-        # but never more than physically fit.
+        # Fill the height, unless the preset pins a row count. Never exceed what
+        # physically fits.
         fit = max(1, avail // self.text_font.height)
-        n = min(rows, fit) if rows else fit
-        n = max(1, n)
+        n = min(cfg["rows"], fit) if "rows" in cfg else fit
         step = avail / n
         self.row_tops = [int(round(top + i * step)) for i in range(n)]
         self.row_height = int(step)
@@ -270,8 +281,8 @@ def draw_station(canvas, title, arrivals, layout):
         baseline = cy + font.height // 2 - 1
         graphics.DrawText(canvas, font, mins_x, baseline, _color(MIN_COLOR), mins_text)
 
-        # Destination, truncated so it doesn't collide with minutes.
-        dest = _truncate_to_width(font, destination, mins_x - dest_x - 1)
+        # Destination, truncated so it doesn't collide with minutes (keep a gap).
+        dest = _truncate_to_width(font, destination, mins_x - dest_x - 3)
         graphics.DrawText(canvas, font, dest_x, baseline, _color(DEST_COLOR), dest)
 
     return canvas
