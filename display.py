@@ -109,7 +109,7 @@ DEFAULT_LAYOUT = "compact"
 class Layout:
     """Resolved fonts + geometry for one layout preset."""
 
-    def __init__(self, name=DEFAULT_LAYOUT, show_header=True):
+    def __init__(self, name=DEFAULT_LAYOUT, show_header=True, rows=None):
         if name not in LAYOUTS:
             raise ValueError(
                 f"Unknown layout {name!r}. Choose from {sorted(LAYOUTS)}."
@@ -123,11 +123,14 @@ class Layout:
         self.bullet_radius = cfg["bullet_radius"]
         self.bullet_cx = cfg["bullet_cx"]
 
-        # Pack as many rows as the font allows into the space below the header
-        # (or the whole panel if the header is hidden), spaced evenly.
+        # Space below the header (or the whole panel if the header is hidden).
         top = HEADER_BLOCK if show_header else 0
         avail = ROWS - top
-        n = max(1, avail // self.text_font.height)
+        # As many rows as the font allows; `rows` can request fewer (bigger gaps)
+        # but never more than physically fit.
+        fit = max(1, avail // self.text_font.height)
+        n = min(rows, fit) if rows else fit
+        n = max(1, n)
         step = avail / n
         self.row_tops = [int(round(top + i * step)) for i in range(n)]
         self.row_height = int(step)

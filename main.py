@@ -79,6 +79,12 @@ def parse_args():
         help="Show the station-name header (default on). Use --no-header to hide it "
         "and reclaim the space for an extra/bigger arrival row.",
     )
+    p.add_argument(
+        "--rows",
+        type=int,
+        help="Force the number of arrival rows (e.g. 2). Fewer rows = bigger gaps. "
+        "Capped at what fits; default fills the height.",
+    )
     return p.parse_args()
 
 
@@ -89,7 +95,8 @@ def main():
     cycle_seconds = cfg.get("cycle_seconds", 8)
     layout_name = args.layout or cfg.get("layout", display.DEFAULT_LAYOUT)
     show_header = args.header if args.header is not None else cfg.get("show_header", True)
-    layout = display.Layout(layout_name, show_header=show_header)
+    rows = args.rows if args.rows is not None else cfg.get("rows")
+    layout = display.Layout(layout_name, show_header=show_header, rows=rows)
     labels = args.labels or cfg.get("labels", "destination")
     chain_length = args.chain_length or cfg.get("chain_length", 2)
     # Fetch at least enough trains to fill the chosen layout's rows.

@@ -3,6 +3,7 @@
   "layout": "compact",
   "labels": "destination",
   "show_header": true,
+  "rows": null,
   "chain_length": 2,
   "cycle_seconds": 8,
   "refresh_seconds": 30,
