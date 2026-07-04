@@ -79,18 +79,19 @@ BUS_BLACK_TEXT = {"SBS"}    # tags whose color is light -> black text
 # Layout — shared header geometry (an amber station header + a divider line).
 HEADER_BASELINE = 6       # baseline y for the station-name header
 DIVIDER_Y = 7             # thin divider line under the header
+HEADER_BLOCK = 8          # vertical px the header + divider occupy when shown
 RIGHT_MARGIN = 1          # gap between minutes text and right edge
 
 # Selectable layout presets. Switch via config.json "layout" or `--layout`.
-#   compact: 5x7 text, 3 rows  -> crisper than 4x6, most info (default)
-#   large:   6x10 text, 2 rows -> biggest text, fewer arrivals, more truncation
+# Row count/positions are computed to fill the height, so hiding the header
+# (show_header=False) automatically reclaims its space for an extra/bigger row.
+#   compact: 5x7 text  -> 3 rows with header, 4 without
+#   large:   6x10 text -> 2 rows with header, 3 without
 LAYOUTS = {
     "compact": {
         "header_font": "5x7.bdf",
         "text_font": "5x7.bdf",
         "bullet_font": "4x6.bdf",
-        "row_tops": [8, 16, 24],
-        "row_height": 8,
         "bullet_radius": 3,
         "bullet_cx": 4,
     },
@@ -98,8 +99,6 @@ LAYOUTS = {
         "header_font": "5x7.bdf",
         "text_font": "6x10.bdf",
         "bullet_font": "5x7.bdf",
-        "row_tops": [9, 21],
-        "row_height": 11,
         "bullet_radius": 4,
         "bullet_cx": 5,
     },
@@ -110,20 +109,28 @@ DEFAULT_LAYOUT = "compact"
 class Layout:
     """Resolved fonts + geometry for one layout preset."""
 
-    def __init__(self, name=DEFAULT_LAYOUT):
+    def __init__(self, name=DEFAULT_LAYOUT, show_header=True):
         if name not in LAYOUTS:
             raise ValueError(
                 f"Unknown layout {name!r}. Choose from {sorted(LAYOUTS)}."
             )
         cfg = LAYOUTS[name]
         self.name = name
+        self.show_header = show_header
         self.header_font = load_font(cfg["header_font"])
         self.text_font = load_font(cfg["text_font"])
         self.bullet_font = load_font(cfg["bullet_font"])
-        self.row_tops = cfg["row_tops"]
-        self.row_height = cfg["row_height"]
         self.bullet_radius = cfg["bullet_radius"]
         self.bullet_cx = cfg["bullet_cx"]
+
+        # Pack as many rows as the font allows into the space below the header
+        # (or the whole panel if the header is hidden), spaced evenly.
+        top = HEADER_BLOCK if show_header else 0
+        avail = ROWS - top
+        n = max(1, avail // self.text_font.height)
+        step = avail / n
+        self.row_tops = [int(round(top + i * step)) for i in range(n)]
+        self.row_height = int(step)
 
     @property
     def max_rows(self):
@@ -237,11 +244,12 @@ def draw_station(canvas, title, arrivals, layout):
     font = layout.text_font
     canvas.Clear()
 
-    # --- Header ---
-    title = _truncate_to_width(layout.header_font, title, WIDTH - 2)
-    graphics.DrawText(canvas, layout.header_font, 1, HEADER_BASELINE, _color(HEADER_COLOR), title)
-    for x in range(WIDTH):
-        canvas.SetPixel(x, DIVIDER_Y, *DIVIDER_COLOR)
+    # --- Header (optional) ---
+    if layout.show_header:
+        title = _truncate_to_width(layout.header_font, title, WIDTH - 2)
+        graphics.DrawText(canvas, layout.header_font, 1, HEADER_BASELINE, _color(HEADER_COLOR), title)
+        for x in range(WIDTH):
+            canvas.SetPixel(x, DIVIDER_Y, *DIVIDER_COLOR)
 
     # --- Arrival rows ---
     for i, (route, destination, minutes) in enumerate(arrivals[: layout.max_rows]):

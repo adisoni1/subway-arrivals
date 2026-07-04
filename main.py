@@ -72,6 +72,13 @@ def parse_args():
         choices=[1, 2],
         help="Chained 64x32 panels: 2 = full 128x32 (default), 1 = single panel for testing.",
     )
+    p.add_argument(
+        "--header",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="Show the station-name header (default on). Use --no-header to hide it "
+        "and reclaim the space for an extra/bigger arrival row.",
+    )
     return p.parse_args()
 
 
@@ -81,7 +88,8 @@ def main():
     refresh_seconds = cfg.get("refresh_seconds", 30)
     cycle_seconds = cfg.get("cycle_seconds", 8)
     layout_name = args.layout or cfg.get("layout", display.DEFAULT_LAYOUT)
-    layout = display.Layout(layout_name)
+    show_header = args.header if args.header is not None else cfg.get("show_header", True)
+    layout = display.Layout(layout_name, show_header=show_header)
     labels = args.labels or cfg.get("labels", "destination")
     chain_length = args.chain_length or cfg.get("chain_length", 2)
     # Fetch at least enough trains to fill the chosen layout's rows.
@@ -99,7 +107,8 @@ def main():
 
     print(
         f"Subway sign cycling {len(screens)} screens every {cycle_seconds}s "
-        f"(layout: {layout.name}, labels: {labels}, "
+        f"(layout: {layout.name}, {layout.max_rows} rows, "
+        f"header: {'on' if show_header else 'off'}, labels: {labels}, "
         f"{display.WIDTH}x{display.ROWS})."
     )
     if not display.IS_HARDWARE:
