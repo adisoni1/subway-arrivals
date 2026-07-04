@@ -2,6 +2,7 @@
   "_comment": "The sign cycles through `screens` every cycle_seconds. Subway stop ids: use find_stop.py. direction: N, S, or both.",
   "layout": "compact",
   "labels": "destination",
+  "bullet_style": "standard",
   "show_header": true,
   "chain_length": 2,
   "cycle_seconds": 8,

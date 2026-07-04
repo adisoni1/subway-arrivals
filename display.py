@@ -210,23 +210,49 @@ def _draw_centered_glyph(canvas, font, letter, cx, cy, color):
     """Draw a single glyph centered on (cx, cy).
 
     Uses only the cross-platform Font API (CharacterWidth / baseline), so it
-    behaves identically on the real rgbmatrix library and the emulator. A
-    capital/digit occupies roughly the font's ascent (top of glyph down to the
-    baseline), so centering that band means placing the text baseline half an
-    ascent below the circle center.
+    behaves identically on the real rgbmatrix library and the emulator.
+
+    Horizontal: the bundled BDF fonts bake ~1px of trailing space into each
+    glyph's advance width, so the visible ink sits 1px left of the advance-box
+    center. We shift right by 1 to actually center the ink. (Portable because
+    all bundled fonts have glyph x-offset fbbxoff=0.)
+
+    Vertical: a capital/digit occupies roughly the font's ascent, so placing the
+    baseline half an ascent below cy centers that band.
     """
-    x = cx - _text_width(font, letter) // 2
+    x = int(round(cx - _text_width(font, letter) / 2)) + 1
     baseline = int(round(cy + font.baseline / 2))
     graphics.DrawText(canvas, font, x, baseline, color, letter)
 
 
-def _draw_subway_bullet(canvas, route, cy, layout):
-    """Filled circle + centered route letter. Returns the x where text starts."""
-    cx, radius = layout.bullet_cx, layout.bullet_radius
+def _draw_subway_bullet(canvas, route, cy, layout, style="standard"):
+    """Filled circle + centered route letter. Returns the x where text starts.
+
+    style controls how yellow-line (N/Q/R/W) bullets — where small black text is
+    hard to read — are drawn:
+      standard: bullet-size letter, black text on yellow (true to the MTA).
+      large:    letter in the row's text size inside a bigger circle.
+      white:    white letter on yellow instead of black.
+    """
+    is_yellow = route.upper() in BLACK_TEXT_ROUTES
+    if style == "large":
+        font = layout.text_font
+        radius = max(layout.bullet_radius, (layout.row_height - 1) // 2)
+        cx = radius + 1
+        text_rgb = BLACK if is_yellow else WHITE
+    elif style == "white":
+        font = layout.bullet_font
+        radius = layout.bullet_radius
+        cx = layout.bullet_cx
+        text_rgb = WHITE
+    else:  # standard
+        font = layout.bullet_font
+        radius = layout.bullet_radius
+        cx = layout.bullet_cx
+        text_rgb = BLACK if is_yellow else WHITE
+
     _draw_filled_circle(canvas, cx, cy, radius, route_color(route))
-    letter = route.upper()[:1]
-    text_rgb = BLACK if route.upper() in BLACK_TEXT_ROUTES else WHITE
-    _draw_centered_glyph(canvas, layout.bullet_font, letter, cx, cy, _color(text_rgb))
+    _draw_centered_glyph(canvas, font, route.upper()[:1], cx, cy, _color(text_rgb))
     return cx + radius + 3
 
 
@@ -246,7 +272,7 @@ def _draw_bus_tag(canvas, label, cy, layout):
     return w + 2
 
 
-def draw_station(canvas, title, arrivals, layout):
+def draw_station(canvas, title, arrivals, layout, bullet_style="standard"):
     """
     Render one screen with the given `layout`: an amber station/route header,
     then up to `layout.max_rows` arrivals. `arrivals` is a list of
@@ -270,7 +296,7 @@ def draw_station(canvas, title, arrivals, layout):
         cy = layout.row_tops[i] + layout.row_height // 2
 
         if len(str(route)) <= 1:
-            dest_x = _draw_subway_bullet(canvas, route, cy, layout)
+            dest_x = _draw_subway_bullet(canvas, route, cy, layout, bullet_style)
         else:
             dest_x = _draw_bus_tag(canvas, route, cy, layout)
 

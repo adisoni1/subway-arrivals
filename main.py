@@ -79,6 +79,13 @@ def parse_args():
         help="Show the station-name header (default on). Use --no-header to hide it "
         "and reclaim the space for an extra/bigger arrival row.",
     )
+    p.add_argument(
+        "--bullet-style",
+        choices=["standard", "large", "white"],
+        help="Yellow-line (N/Q/R/W) bullet readability: 'standard' (small black "
+        "text), 'large' (row-size letter in a bigger circle), or 'white' (white "
+        "text on yellow). A/B these on the panel, then pick one.",
+    )
     return p.parse_args()
 
 
@@ -91,6 +98,7 @@ def main():
     show_header = args.header if args.header is not None else cfg.get("show_header", True)
     layout = display.Layout(layout_name, show_header=show_header)
     labels = args.labels or cfg.get("labels", "destination")
+    bullet_style = args.bullet_style or cfg.get("bullet_style", "standard")
     chain_length = args.chain_length or cfg.get("chain_length", 2)
     # Fetch at least enough trains to fill the chosen layout's rows.
     max_arrivals = max(cfg.get("max_arrivals", 3), layout.max_rows)
@@ -109,7 +117,7 @@ def main():
         f"Subway sign cycling {len(screens)} screens every {cycle_seconds}s "
         f"(layout: {layout.name}, {layout.max_rows} rows, "
         f"header: {'on' if layout.show_header else 'off'}, labels: {labels}, "
-        f"{display.WIDTH}x{display.ROWS})."
+        f"bullets: {bullet_style}, {display.WIDTH}x{display.ROWS})."
     )
     if not display.IS_HARDWARE:
         print("Emulator running — open http://localhost:8888 in a browser.")
@@ -129,7 +137,7 @@ def main():
         screen = screens[idx]
         rows = [(a.route, row_text(a, labels), a.minutes_away()) for a in caches[idx]]
 
-        display.draw_station(canvas, screen["name"], rows, layout)
+        display.draw_station(canvas, screen["name"], rows, layout, bullet_style)
         canvas = matrix.SwapOnVSync(canvas)
 
         time.sleep(1)
